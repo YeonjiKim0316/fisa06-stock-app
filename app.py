@@ -13,10 +13,16 @@ import koreanize_matplotlib
 import os
 from dotenv import load_dotenv
 
+if 'search_history' not in st.session_state:
+    st.session_state['search_history'] = []  ########### 최근 검색어를 담을 리스트
+
 load_dotenv()  # .env에 있는 환경변수를 읽어옴 -> 맨 앞줄에 작성
 
 my_name = os.getenv('MY_NAME')
 st.header(my_name)
+
+# 서버에 저장하는 결과값 => 캐싱 => 캐싱
+@st.cache_data ############## 캐싱 적용: 최초로 이 함수가 실행될 때 한번만 load되고, 이후 동일한 파라미터로 호출되면 캐시된 결과를 반환
 def get_krx_company_list() -> pd.DataFrame:
     try:
         # 파이썬 및 인터넷의 기본 문자열 인코딩 방식- UTF-8
@@ -45,6 +51,7 @@ def get_stock_code_by_company(company_name: str) -> str:
         raise ValueError(f"'{company_name}'을 찾을 수 없습니다. 종목코드 6자리를 직접 입력해보세요.")
 
 company_name = st.sidebar.text_input('조회할 회사를 입력하세요')
+# 2. 최근 검색 목록 표시 (session_state 활용)
 # https://docs.streamlit.io/develop/api-reference/widgets/st.date_input
 
 today = datetime.datetime.now()
@@ -68,6 +75,8 @@ if confirm_btn:
         try:
             with st.spinner('데이터를 수집하는 중...'):
                 stock_code = get_stock_code_by_company(company_name)
+                if company_name not in st.session_state['search_history']:
+                    st.session_state['search_history'].append(company_name)  ########### 최근 검색어 추가
                 start_date = selected_dates[0].strftime("%Y%m%d")
                 end_date = selected_dates[1].strftime("%Y%m%d")
                 
